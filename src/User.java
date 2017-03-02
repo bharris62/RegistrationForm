@@ -1,9 +1,9 @@
 
 public class User {
-    Integer id;
-    String username;
-    String address;
-    String email;
+    private Integer id;
+    private String username;
+    private String address;
+    private String email;
 
     public User() {}
 

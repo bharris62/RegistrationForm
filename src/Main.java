@@ -1,14 +1,18 @@
+import jodd.json.JsonParser;
+import jodd.json.JsonSerializer;
 import org.h2.tools.Server;
 import spark.Spark;
 
 import java.sql.*;
 import java.util.ArrayList;
 
+import static org.h2.mvstore.type.ObjectDataType.serialize;
+
 public class Main {
 
     public static ArrayList<User> selectUsers(Connection conn) throws SQLException {
         ArrayList<User> users = new ArrayList<>();
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM USERS;");
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users;");
         ResultSet results = stmt.executeQuery();
 
         while (results.next()) {
@@ -57,5 +61,34 @@ public class Main {
         createTable(conn);
         Spark.externalStaticFileLocation("public");
         Spark.init();
+
+        Spark.get("/user", (request, response)-> {
+            ArrayList<User> users = selectUsers(conn);
+            JsonSerializer s = new JsonSerializer();
+            return s.serialize(users);
+        });
+
+        Spark.post("/user", (request, response)->{
+            String body = request.body();
+            JsonParser p = new JsonParser();
+            User user = p.parse(body, User.class);
+            insertUser(conn, user.getUsername(), user.getAddress(), user.getEmail());
+            return "";
+        });
+
+        Spark.put("/user", (request, response) -> {
+            String body = request.body();
+            JsonParser p = new JsonParser();
+            User user = p.parse(body, User.class);
+            updateUser(conn,user.getId(), user.getUsername(), user.getAddress(), user.getEmail());
+            return "";
+        });
+
+        Spark.delete("/user/:id", (request, response) -> {
+            Integer id = Integer.parseInt(request.params(":id"));
+            deleteUser(conn, id);
+            return "";
+        });
+
     }
 }
